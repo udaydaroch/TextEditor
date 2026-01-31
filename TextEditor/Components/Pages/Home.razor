@@ -1,0 +1,364 @@
+﻿@page "/"
+@using TextEditor.Models
+@using TextEditor.Services
+@rendermode InteractiveServer
+@inject IFolderService FolderService
+@inject IDocumentService DocumentService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>My Documents</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>My Folders</h1>
+        <div class="d-flex gap-2">
+            <!-- View Toggle -->
+            <div class="btn-group" role="group">
+                <button type="button" 
+                        class="btn btn-outline-secondary @(viewMode == ViewMode.Grid ? "active" : "")" 
+                        @onclick="async () => await SetViewMode(ViewMode.Grid)">
+                    <i class="bi bi-grid-3x3-gap-fill"></i> Grid
+                </button>
+                <button type="button" 
+                        class="btn btn-outline-secondary @(viewMode == ViewMode.List ? "active" : "")" 
+                        @onclick="async () => await SetViewMode(ViewMode.List)">
+                    <i class="bi bi-list-ul"></i> List
+                </button>
+            </div>
+
+            <button class="btn btn-primary" @onclick="ShowCreateFolderModal">
+                <i class="bi bi-folder-plus"></i> New Folder
+            </button>
+            <button class="btn btn-success" @onclick="CreateNewDocument">
+                <i class="bi bi-file-earmark-plus"></i> New Document
+            </button>
+        </div>
+    </div>
+
+    @if (folders == null)
+    {
+        <p><em>Loading folders...</em></p>
+    }
+    else if (!folders.Any() && unfolderedDocs?.Count == 0)
+    {
+        <div class="alert alert-info">
+            <h4>Welcome! 👋</h4>
+            <p>You don't have any folders or documents yet. Get started by creating a folder to organize your work!</p>
+        </div>
+    }
+    else
+    {
+        @if (viewMode == ViewMode.Grid)
+        {
+            <!-- GRID VIEW -->
+            <div class="row">
+                <!-- Unfiled Documents Folder (if any exist) -->
+                @if (unfolderedDocs != null && unfolderedDocs.Any())
+                {
+                    <div class="col-md-4 col-lg-3 mb-4">
+                        <div class="card h-100 folder-card" @onclick="() => ViewUnfolderedDocuments()" style="cursor: pointer;">
+                            <div class="card-body text-center">
+                                <i class="bi bi-inbox" style="font-size: 3rem; color: #6c757d;"></i>
+                                <h5 class="card-title mt-3">Unfiled Documents</h5>
+                                <p class="text-muted">@unfolderedDocs.Count document(s)</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Regular Folders -->
+                @foreach (var folder in folders)
+                {
+                    <div class="col-md-4 col-lg-3 mb-4">
+                        <div class="card h-100 folder-card" style="cursor: pointer;">
+                            <div class="card-body text-center" @onclick="() => OpenFolder(folder.Id)">
+                                <i class="bi bi-folder-fill" style="font-size: 3rem; color: #ffc107;"></i>
+                                <h5 class="card-title mt-3">@folder.Name</h5>
+                                @if (!string.IsNullOrEmpty(folder.Description))
+                                {
+                                    <p class="text-muted small">@folder.Description</p>
+                                }
+                                <p class="text-muted">@folder.DocumentCount document(s)</p>
+                            </div>
+                            <div class="card-footer bg-transparent border-top-0 text-center">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteFolder(folder.Id)" @onclick:stopPropagation="true">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <!-- LIST VIEW -->
+            <div class="list-group">
+                <!-- Unfiled Documents (if any exist) -->
+                @if (unfolderedDocs != null && unfolderedDocs.Any())
+                {
+                    <div class="list-group-item list-group-item-action folder-list-item" 
+                         @onclick="() => ViewUnfolderedDocuments()" 
+                         style="cursor: pointer;">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <i class="bi bi-inbox" style="font-size: 2rem; color: #6c757d;"></i>
+                                <div>
+                                    <h5 class="mb-1">Unfiled Documents</h5>
+                                    <p class="mb-0 text-muted small">Documents without a folder</p>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-secondary">@unfolderedDocs.Count document(s)</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Regular Folders -->
+                @foreach (var folder in folders)
+                {
+                    <div class="list-group-item list-group-item-action folder-list-item" style="cursor: pointer;">
+                        <div class="d-flex w-100 justify-content-between align-items-center" @onclick="() => OpenFolder(folder.Id)">
+                            <div class="d-flex align-items-center gap-3">
+                                <i class="bi bi-folder-fill" style="font-size: 2rem; color: #ffc107;"></i>
+                                <div>
+                                    <h5 class="mb-1">@folder.Name</h5>
+                                    @if (!string.IsNullOrEmpty(folder.Description))
+                                    {
+                                        <p class="mb-0 text-muted small">@folder.Description</p>
+                                    }
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-warning text-dark">@folder.DocumentCount document(s)</span>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        @onclick="() => DeleteFolder(folder.Id)" 
+                                        @onclick:stopPropagation="true">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+<!-- Modal for Creating New Folder -->
+<div class="modal fade @(showCreateFolder ? "show d-block" : "")" tabindex="-1" style="@(showCreateFolder ? "background-color: rgba(0,0,0,0.5);" : "")">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-folder-plus"></i> Create New Folder
+                </h5>
+                <button type="button" class="btn-close" @onclick="CloseModal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Folder Name <span class="text-danger">*</span></label>
+                    <input type="text" 
+                           class="form-control" 
+                           @bind="newFolderName" 
+                           placeholder="Enter folder name"
+                           @onkeyup="HandleKeyPress" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description (optional)</label>
+                    <textarea class="form-control" 
+                              @bind="newFolderDescription" 
+                              placeholder="Enter description"
+                              rows="3"></textarea>
+                </div>
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">
+                        @errorMessage
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                <button type="button" class="btn btn-primary" @onclick="CreateFolder">
+                    <i class="bi bi-check-lg"></i> Create Folder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .folder-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .folder-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .folder-list-item {
+        transition: background-color 0.2s;
+    }
+
+    .folder-list-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* Modal styling */
+    .modal.show {
+        display: block;
+    }
+</style>
+
+@code {
+    private enum ViewMode
+    {
+        Grid,
+        List
+    }
+
+    private List<Folder>? folders;
+    private List<Document>? unfolderedDocs;
+    private bool showCreateFolder = false;
+    private string newFolderName = string.Empty;
+    private string newFolderDescription = string.Empty;
+    private string errorMessage = string.Empty;
+    private ViewMode viewMode = ViewMode.Grid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadViewMode();
+        await LoadFolders();
+        await LoadUnfolderedDocuments();
+    }
+
+    private async Task LoadViewMode()
+    {
+        try
+        {
+            var savedMode = await JS.InvokeAsync<string>("localStorage.getItem", "folderViewMode");
+            if (!string.IsNullOrEmpty(savedMode) && Enum.TryParse<ViewMode>(savedMode, out var mode))
+            {
+                viewMode = mode;
+            }
+        }
+        catch
+        {
+            // If localStorage fails, just use default
+            viewMode = ViewMode.Grid;
+        }
+    }
+
+    private async Task SetViewMode(ViewMode mode)
+    {
+        viewMode = mode;
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "folderViewMode", mode.ToString());
+        }
+        catch
+        {
+            // Ignore localStorage errors
+        }
+    }
+
+    private async Task LoadFolders()
+    {
+        folders = await FolderService.GetAllFoldersAsync();
+        
+        // Update document counts for each folder
+        foreach (var folder in folders)
+        {
+            folder.DocumentCount = await DocumentService.GetDocumentCountByFolderIdAsync(folder.Id);
+        }
+    }
+
+    private async Task LoadUnfolderedDocuments()
+    {
+        unfolderedDocs = await DocumentService.GetDocumentsWithoutFolderAsync();
+    }
+
+    private void ShowCreateFolderModal()
+    {
+        showCreateFolder = true;
+        newFolderName = string.Empty;
+        newFolderDescription = string.Empty;
+        errorMessage = string.Empty;
+    }
+
+    private void CloseModal()
+    {
+        showCreateFolder = false;
+        newFolderName = string.Empty;
+        newFolderDescription = string.Empty;
+        errorMessage = string.Empty;
+    }
+
+    private async Task CreateFolder()
+    {
+        if (string.IsNullOrWhiteSpace(newFolderName))
+        {
+            errorMessage = "Folder name is required.";
+            return;
+        }
+
+        var folder = new Folder
+        {
+            Name = newFolderName.Trim(),
+            Description = newFolderDescription?.Trim() ?? string.Empty
+        };
+
+        await FolderService.CreateFolderAsync(folder);
+        CloseModal();
+        await LoadFolders();
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(newFolderName))
+        {
+            await CreateFolder();
+        }
+        else if (e.Key == "Escape")
+        {
+            CloseModal();
+        }
+    }
+
+    private async Task DeleteFolder(int folderId)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this folder? Documents inside will become unfiled."))
+        {
+            // Unfold all documents in this folder
+            var docs = await DocumentService.GetDocumentsByFolderIdAsync(folderId);
+            foreach (var doc in docs)
+            {
+                doc.FolderId = null;
+                await DocumentService.UpdateDocumentAsync(doc);
+            }
+
+            await FolderService.DeleteFolderAsync(folderId);
+            await LoadFolders();
+            await LoadUnfolderedDocuments();
+        }
+    }
+
+    private void OpenFolder(int folderId)
+    {
+        Navigation.NavigateTo($"/folders/{folderId}");
+    }
+
+    private void ViewUnfolderedDocuments()
+    {
+        Navigation.NavigateTo("/documents/unfiled");
+    }
+
+    private void CreateNewDocument()
+    {
+        Navigation.NavigateTo("/documents/edit/0");
+    }
+}

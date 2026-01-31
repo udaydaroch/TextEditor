@@ -1,0 +1,124 @@
+@page "/documents/edit/{Id:int}"
+@using TextEditor.Models
+@using TextEditor.Services
+@rendermode InteractiveServer
+@inject IDocumentService DocumentService
+@inject IFolderService FolderService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3>@(isNewDocument ? "Create New Document" : "Edit Document")</h3>
+
+<div class="mb-3">
+    <label class="form-label">Folder</label>
+    <select class="form-select" @bind="document.FolderId">
+        <option value="">-- No Folder (Unfiled) --</option>
+        @if (folders != null)
+        {
+            @foreach (var folder in folders)
+            {
+                <option value="@folder.Id">@folder.Name</option>
+            }
+        }
+    </select>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Title</label>
+    <input type="text" class="form-control" @bind="document.Title" placeholder="Enter document title" />
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Content</label>
+    <textarea class="form-control" 
+              @bind="document.Content" 
+              rows="20" 
+              placeholder="Start writing..."
+              style="font-family: monospace;">
+    </textarea>
+</div>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="Save">
+        <i class="bi bi-save"></i> Save
+    </button>
+    <button class="btn btn-secondary" @onclick="Cancel">
+        Cancel
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-success">@message</div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromQuery]
+    public int? FolderId { get; set; }
+
+    private Document document = new();
+    private List<Folder>? folders;
+    private bool isNewDocument => Id == 0;
+    private string message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        folders = await FolderService.GetAllFoldersAsync();
+
+        if (!isNewDocument)
+        {
+            var existingDoc = await DocumentService.GetDocumentByIdAsync(Id);
+            if (existingDoc != null)
+            {
+                document = existingDoc;
+            }
+            else
+            {
+                Navigation.NavigateTo("/");
+            }
+        }
+        else if (FolderId.HasValue)
+        {
+            document.FolderId = FolderId.Value;
+        }
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(document.Title))
+        {
+            message = "Please enter a title";
+            return;
+        }
+
+        if (isNewDocument)
+        {
+            await DocumentService.CreateDocumentAsync(document);
+            message = "Document created successfully!";
+        }
+        else
+        {
+            await DocumentService.UpdateDocumentAsync(document);
+            message = "Document updated successfully!";
+        }
+
+        await Task.Delay(1000);
+        
+        if (document.FolderId.HasValue)
+        {
+            Navigation.NavigateTo($"/folders/{document.FolderId.Value}");
+        }
+        else
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/");
+    }
+}
