@@ -45,6 +45,14 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "dependencies": {
+            "DocumentFormat.OpenXml": {
+              "target": "Package",
+              "version": "[3.4.1, )"
+            },
+            "HtmlToOpenXml.dll": {
+              "target": "Package",
+              "version": "[3.3.1, )"
+            },
             "Microsoft.AspNetCore.App.Internal.Assets": {
               "suppressParent": "All",
               "target": "Package",

@@ -83,3 +83,14 @@
 /Users/udaydaroch/Desktop/TextEditor/TextEditor/obj/Debug/net10.0/ref/TextEditor.dll
 /Users/udaydaroch/Desktop/TextEditor/TextEditor/obj/Debug/net10.0/compressed/gbjih29hlv-{0}-1bz3zhyi5l-1bz3zhyi5l.gz
 /Users/udaydaroch/Desktop/TextEditor/TextEditor/obj/Debug/net10.0/compressed/gsmh4xh93x-{0}-1bz3zhyi5l-1bz3zhyi5l.gz
+/Users/udaydaroch/Desktop/TextEditor/TextEditor/obj/Debug/net10.0/TextEditor.sourcelink.json
+/Users/udaydaroch/Desktop/TextEditor/TextEditor/obj/Debug/net10.0/compressed/p1q9e5bofg-{0}-7inyv1kmry-7inyv1kmry.gz
+/Users/udaydaroch/Desktop/TextEditor/TextEditor/bin/Debug/net10.0/AngleSharp.dll
+/Users/udaydaroch/Desktop/TextEditor/TextEditor/bin/Debug/net10.0/DocumentFormat.OpenXml.dll
+/Users/udaydaroch/Desktop/TextEditor/TextEditor/bin/Debug/net10.0/DocumentFormat.OpenXml.Framework.dll
+/Users/udaydaroch/Desktop/TextEditor/TextEditor/bin/Debug/net10.0/HtmlToOpenXml.dll
+/Users/udaydaroch/Desktop/TextEditor/TextEditor/bin/Debug/net10.0/System.IO.Packaging.dll
+/Users/udaydaroch/Desktop/TextEditor/TextEditor/obj/Debug/net10.0/TextEditor.csproj.AssemblyReference.cache
+/Users/udaydaroch/Desktop/TextEditor/TextEditor/obj/Debug/net10.0/TextEditor.csproj.Up2Date
+/Users/udaydaroch/Desktop/TextEditor/TextEditor/obj/Debug/net10.0/compressed/9v32wqnrko-{0}-evmvwtuqt4-evmvwtuqt4.gz
+/Users/udaydaroch/Desktop/TextEditor/TextEditor/obj/Debug/net10.0/compressed/y1urz1d3in-{0}-3obqn8s3n2-3obqn8s3n2.gz
